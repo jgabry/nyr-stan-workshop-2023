@@ -16,7 +16,7 @@ In an R session run the following to install packages we'll use (or might use, t
 
 ```
 install.packages(
-  c("remotes", "dplyr", "lubridate", "fs", "stringr", 
+  c("remotes", "dplyr", "lubridate", 
     "ggplot2", "bayesplot", "posterior", "loo")
 )
 ```
