@@ -18,9 +18,9 @@ transformed parameters {
 }
 model {
   complaints ~ poisson_log(eta);
-  
+
   // priors
-  alpha ~ normal(log(7), 1);
+  alpha ~ normal(2, 1);
   beta ~ normal(-0.25, 0.5);
   beta_super ~ normal(-0.5, 1);
 }

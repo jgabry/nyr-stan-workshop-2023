@@ -47,38 +47,38 @@ transformed parameters {
     for (m in 1:M)
       C[m,m] += 1e-12;
     L_C = cholesky_decompose(C);
-    
+
     // this gets saved because gp_exp_quad was declared above the local scope
-    gp_exp_quad = L_C * gp_raw; 
+    gp_exp_quad = L_C * gp_raw;
   }
-  
+
   // gp is sum of monthly noise and the smoothly varying process
   gp = mo_noise + gp_exp_quad;
 }
 model {
   inv_phi ~ normal(0, 1);
-  
+
   kappa_raw ~ normal(0,1) ;
   sigma_kappa ~ normal(0, 1);
   beta ~ normal(-0.25, 0.5);
   gamma ~ normal(0, 1);
-  
+
   mu_raw ~ normal(0,1) ;
   sigma_mu ~ normal(0, 1);
-  alpha ~ normal(log(7), 1);
+  alpha ~ normal(2, 1);
   zeta ~ normal(0, 1);
-  
+
   // GP priors
   gp_raw ~ normal(0, 1);
   gp_len ~ gamma(10, 2);
   sigma_gp ~ normal(0, 1);
-  
+
   sigma_noise ~ normal(0, 1);
   mo_noise_raw ~ normal(0, 1);
-  
-  complaints ~ neg_binomial_2_log(mu[building_idx] + kappa[building_idx] .* traps 
+
+  complaints ~ neg_binomial_2_log(mu[building_idx] + kappa[building_idx] .* traps
                                  + gp[mo_idx] + log_sq_foot, phi);
-} 
+}
 generated quantities {
   array[N] int y_rep;
   for (n in 1:N) {

@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
   fig.align = "center",
   comment = NA
 )
+print.draws_summary <- function(x, ...) print(as.data.frame(x))
 ```
 
 ```{r setup, results="hide", message=FALSE}
@@ -81,6 +82,9 @@ the total number of cockroach complaints in that building.
 call them $\textrm{traps}$) that balances the losses ($L$) that complaints
 ($\textrm{complaints}$) generate with the all-in cost of maintaining the traps
 ($\textrm{C}$).
+* Here $L$ include things like the cost of calling an exterminator, potential losses
+due to bad reviews of the buildings, etc., while $C$ refers to the costs of
+maintaining the traps themselves.
 
 Fortunately, Bayesian data analysis provides a coherent framework for us to
 tackle this problem.
@@ -287,9 +291,9 @@ A more reasonable prior:
 ```{r prior-pred-better}
 simple_poisson_dgp(
   traps = pest_data$traps,
-  alpha_mean = log(7),
-  alpha_sd = 0.5,
-  beta_mean = -0.25,
+  alpha_mean = 2,   # approx log(7), i.e., if no traps expect about 7 complaints
+  alpha_sd = 1,
+  beta_mean = -0.25,  # log(a little less than one)
   beta_sd = 0.5
 )
 ```
@@ -300,8 +304,8 @@ Simulate 1000 times and calculate summary stats:
 prior_preds <- t(replicate(1000, expr = {
   simple_poisson_dgp(
     traps = pest_data$traps,
-    alpha_mean = log(7),
-    alpha_sd = 0.5,
+    alpha_mean = 2,
+    alpha_sd = 1,
     beta_mean = -0.25,
     beta_sd = 0.5
   )
@@ -316,17 +320,26 @@ summary(apply(prior_preds, 1, min))
 summary(apply(prior_preds, 1, max))
 ```
 
+This is still not great, but more reasonable than the previous one. In general,
+it's difficult for this example to find the right parameter values for a Poisson
+that make the predictions highly plausible. For example, when checking the mean
+of the prior predictions some outlandishly high maximums are too influential
+(the quartiles are more reasonable). For now we'll still use this because it's the
+simplest count model. We will get more realistic as we develop a better model
+later.
+
 
 
 ### Writing and fitting our first Stan program
 
 ```{r replace-rstan-syntax-checking}
+# OPTIONAL
 # RStudio has support for Stan syntax checking but it uses RStan not CmdStanR.
 # Because RStan is a few Stan versions behind CmdStanR we need to force 
 # RStudio's syntax checking to use CmdStanR so we can use the latest Stan syntax.
-# Once CmdStanR is on CRAN we will work with RStudio to incorporate CmdStanR
-# syntax checking automatically.
-source("replace-rstan-syntax-check.R")
+if (requireNamespace("rstan", quietly = TRUE)) {
+  source("replace-rstan-syntax-check.R")
+}
 ```
 
 Let's encode the model in a Stan program.
@@ -408,6 +421,8 @@ building is associated with the number of complaints about cockroaches that were
 made in the following month. However, we still need to consider how well the
 model fits.
 
+To try at home: change the priors and see how it affects the posterior. 
+
 
 ### Posterior predictive checking
 
@@ -482,7 +497,7 @@ of traps:
 ppc_intervals(
   y = standata_simple$complaints, 
   yrep = y_rep,
-  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.2)
+  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.1)
 ) +  
   labs(
     x = "Number of traps (jittered)", 
@@ -589,7 +604,7 @@ numbers of traps.
 ppc_intervals(
   y = standata_simple$complaints,
   yrep = y_rep,
-  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.2)
+  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.1)
 ) +
   labs(
     x = "Number of traps (jittered)", 
@@ -608,7 +623,8 @@ When we considered modeling the data using a Poisson, we saw that the model
 didn't appear to fit as well to the data as we would like. In particular the
 model underpredicted low and high numbers of complaints, and overpredicted the
 medium number of complaints. This is one indication of over-dispersion, where
-the variance is larger than the mean. A Poisson model doesn't fit over-dispersed
+the variance is larger than the mean. (Maybe people either complain a lot or don't 
+complain much? Maybe other reasons?) A Poisson model doesn't fit over-dispersed
 count data very well because the same parameter $\lambda$, controls both the
 expected counts and the variance of these counts. The natural alternative to
 this is the negative binomial model:
@@ -687,7 +703,7 @@ Check predictions by number of traps:
 ppc_intervals(
   y = standata_simple$complaints,
   yrep = y_rep,
-  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.2)
+  x = standata_simple$traps + rnorm(standata_simple$N, 0, 0.1)
 ) +
   labs(
     x = "Number of traps (jittered)", 
@@ -714,6 +730,7 @@ estimated better than others and some have large uncertainties.
 If we explicitly model the variation across buildings we may be able to
 get even better estimates.
 
+
 ## Hierarchical modeling
 
 ### Modeling varying intercepts for each building
@@ -732,7 +749,7 @@ In our Stan model, $\mu_b$ is the $b$-th element of the vector
 $\texttt{mu}$ which has one element per building.
 
 One of our predictors varies only by building, so we can rewrite the above model
-more efficiently like so:
+to avoid some redundant calculations like this (doing $\beta_{\rm super}\, {\rm super}_b$ only once per building):
 
 $$
 \eta_{b,t} = \mu_b + \beta \, {\rm traps}_{b,t} + \text{log_sq_foot}_b\\
@@ -750,12 +767,13 @@ monthly rent so we can add that data into a matrix called
 * `average_tentant_age`
 * `monthly_average_rent`
 
-We'll write the Stan model like:
+We'll write the Stan model like this (where `mu` is vectorized):
 
 $$
 \eta_{b,t} = \mu_b + \beta \, {\rm traps} + \text{log_sq_foot}\\
 \mu \sim \text{Normal}(\alpha + \texttt{building_data} \, \zeta, \,\sigma_{\mu})
 $$
+
 
 ### Prepare building data for hierarchical model
 
@@ -872,7 +890,8 @@ You can see that the effective sample sizes are quite low for many of the parame
 relative to the total number of samples (4000). This alone isn't indicative of the need
 to reparameterize, but it indicates that we should look further at the trace
 plots and pairs plots. First let's look at the traceplots to see if the divergent
-transitions form a pattern.
+transitions form a pattern. We'll look at the new `sigma_mu` parameter, which is 
+the hierarchical standard deviation parameter we added to the model.
 
 ```{r fit_hier_NB-mcmc_trace-divs}
 # change bayesplot color scheme (to make chains very different colors)
@@ -952,6 +971,18 @@ $\text{Normal}(\alpha + \texttt{building_data}\, \zeta, \sigma_\mu)$ as before,
 but it decouples the dependence of the density of each element of
 $\texttt{mu}$ from $\texttt{sigma_mu}$ ($\sigma_\mu$) and makes the
 geometry easier for the sampler to navigate.
+
+```{r plot-prior-no-funnel}
+draw_from_prior_non_centered <- function() {
+  sigma_mu_prior <- abs(rnorm(1, mean = 0, sd = 1))
+  mu_raw_prior <- rnorm(1, mean = 0, sd = 1)
+  c("mu_raw" = mu_raw_prior, "log(sigma_mu)" = log(sigma_mu_prior))
+}
+
+# plot a bunch of draws
+prior_draws <- t(replicate(1000, draw_from_prior_non_centered()))
+mcmc_scatter(prior_draws)
+```
 
 To implement this in the Stan program we need to put $\texttt{mu_raw}$ in the parameters block (with a $\text{Normal}(0, 1)$ prior in the model
 block), and then define $\texttt{mu}$ in the transformed parameters block.
@@ -1034,8 +1065,19 @@ ppc_stat_grouped(
 ```
 
 We weren't doing terribly with the building-specific means before, but now they
-are all estimated much more precisely. The model is also able to do a
-decent job estimating the probability of zero complaints:
+are all estimated much more precisely. For example, let's compare the standard 
+deviation of the `y_rep` for building 47 from the non-hierarchical and hierarchical
+models: 
+
+```{r compare-bldg-47}
+y_rep_47_hier <- y_rep[, pest_data$building_id == 47]
+y_rep_47_old <- fit_multi_NB$draws("y_rep", format = "matrix")[, pest_data$building_id == 47]
+
+c("Non-hierarchical" = sd(y_rep_47_old), "Hierarchical" = sd(y_rep_47_hier))
+```
+
+
+The model is also able to do a decent job estimating the probability of zero complaints:
 
 ```{r fit_hier_NB_ncp-ppc_stat-prop-zero}
 prop_zero <- function(x) mean(x == 0)
@@ -1075,7 +1117,7 @@ Predictions by number of traps:
 ppc_intervals_grouped(
   y = standata_hier$complaints,
   yrep = y_rep,
-  x = standata_hier$traps + rnorm(standata_hier$N, 0, 0.2), # jitter
+  x = standata_hier$traps + rnorm(standata_hier$N, 0, 0.1), # jitter
   group = standata_hier$building_idx
   # difference between grouping by pest_data$building_id and standata_hier$building_idx
   # is that the latter is consecutive from 1 to N_buildings to make things easier
@@ -1128,6 +1170,12 @@ fit_hier_NB_slopes <-
     refresh = 200
   )
 ```
+
+
+We may or may not get a few divergences here, but as long as there aren't many
+of them clustered together it's usually safe to ignore (as discussed in the
+[Visualization in Bayesian Workflow](https://arxiv.org/pdf/1709.01449.pdf) paper).
+
 
 ```{r fit_hier_NB_slopes-summary}
 fit_hier_NB_slopes$summary(variables = c("alpha", "beta", "sigma_kappa", "kappa", "sigma_mu", "mu"))
