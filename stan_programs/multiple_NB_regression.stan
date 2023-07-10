@@ -20,11 +20,13 @@ transformed parameters {
 }
 model {
   // use neg_binomial_2_log instead of poisson_log as distribution for complaints
+
   alpha ~ normal(2, 1);
   beta ~ normal(-0.25, 0.5);
   beta_super ~ normal(-0.5, 1);
   inv_phi ~ normal(0, 1);
 }
 generated quantities {
-  array[N] int y_rep = neg_binomial_2_log_rng(eta, phi);
+  // use neg_binomial_2_log_rng instead of poisson_log_rng
+
 }
