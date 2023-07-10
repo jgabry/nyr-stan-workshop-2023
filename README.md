@@ -30,6 +30,8 @@ https://chi-feng.github.io/mcmc-demo/app.html
 
 ### Tentative Agenda
 
+(This may change substantially based on how we end up tailoring the content to the specific group we have.)
+
 Day 1 Morning
 
 - Intro Bayesian workflow and Stan
@@ -54,5 +56,5 @@ Topics we won't have time to cover but are included in the workshop materials:
 
 - Varying slopes model
 - Time varying parameters
-- Forecasting
+- Forecasting and decision making
 
