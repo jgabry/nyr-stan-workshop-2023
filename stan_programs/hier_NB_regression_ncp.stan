@@ -1,7 +1,7 @@
 // hierarchical model with non-centered parameterization of mu
 
 // RIGHT NOW THIS IS SAME AS hier_NB_regression.stan
-// NEED TO CHANGE TO NON-CENTERED PARAMETERIZATION
+// NEED TO CHANGE TO NON-CENTERED PARAMETERIZATION of mu
 data {
   int<lower=1> N;
   array[N] int<lower=0> complaints;
