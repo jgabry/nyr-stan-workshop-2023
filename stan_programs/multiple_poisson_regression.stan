@@ -10,7 +10,7 @@ data {
 parameters {
   real alpha;
   real beta;
-  real beta_super;
+  // add beta_super parameter (coefficient on live in super)
 }
 transformed parameters {
   // create variable eta for the linear predictor
