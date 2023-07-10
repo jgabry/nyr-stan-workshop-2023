@@ -18,7 +18,9 @@ knitr::opts_chunk$set(
   fig.align = "center",
   comment = NA
 )
-print.draws_summary <- function(x, ...) print(as.data.frame(x))
+
+# avoid weird print bug in rmarkdown notebooks (maybe fixed now?)
+print.draws_summary <- function(x, ...) print(as.data.frame(x), ...)
 ```
 
 ```{r setup, results="hide", message=FALSE}
@@ -259,42 +261,16 @@ simple_poisson_dgp(
 )
 ```
 
-Let's calculate some summary statistics of 1000 data sets generated according
-to the $N(0,1)$ priors:
-
-```{r prior-pred-check}
-prior_preds <- t(replicate(1000, expr = {
-  simple_poisson_dgp(
-    traps = pest_data$traps,
-    alpha_mean = 0,
-    alpha_sd = 1,
-    beta_mean = 0,
-    beta_sd = 1
-  )
-}))
-dim(prior_preds)
-```
-
-```{r prior-pred-mean}
-summary(apply(prior_preds, 1, mean))
-```
-```{r prior-pred-min}
-summary(apply(prior_preds, 1, min))
-```
-```{r prior-pred-max}
-summary(apply(prior_preds, 1, max))
-```
-
 
 A more reasonable prior:
 
 ```{r prior-pred-better}
 simple_poisson_dgp(
   traps = pest_data$traps,
-  alpha_mean = 2,   # approx log(7), i.e., if no traps expect about 7 complaints
+  alpha_mean = 2,     # approx log(7), i.e., if no traps expect about 7 complaints
   alpha_sd = 1,
-  beta_mean = -0.25,  # log(a little less than one)
-  beta_sd = 0.5
+  beta_mean = -0.25,  # assume more traps -> fewer complaints
+  beta_sd = 0.5       # but big enough sd to allow us to be wrong
 )
 ```
 
@@ -312,6 +288,7 @@ prior_preds <- t(replicate(1000, expr = {
 }))
 ```
 
+
 ```{r prior-pred-better-stats}
 summary(apply(prior_preds, 1, mean))
 
@@ -320,13 +297,21 @@ summary(apply(prior_preds, 1, min))
 summary(apply(prior_preds, 1, max))
 ```
 
-This is still not great, but more reasonable than the previous one. In general,
-it's difficult for this example to find the right parameter values for a Poisson
-that make the predictions highly plausible. For example, when checking the mean
-of the prior predictions some outlandishly high maximums are too influential
-(the quartiles are more reasonable). For now we'll still use this because it's the
-simplest count model. We will get more realistic as we develop a better model
-later.
+Plot the distribution of means: 
+
+```{r prior-pred-plot}
+ppd_stat(prior_preds, stat = "mean")
+
+ppd_stat(prior_preds) + 
+  xlim(-1, 50) + 
+  ggtitle("Prior predictive distribution of avg. # of complaints")
+```
+
+This is more reasonable than the previous priors, although there is still room
+for improvement. For example, when checking the mean of the prior predictions
+some outlandishly high maximums are too influential (the quartiles are more
+reasonable). For now we'll still use this but we'll get more realistic as we
+develop a better model later.
 
 
 
