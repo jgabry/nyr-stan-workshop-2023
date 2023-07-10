@@ -18,9 +18,6 @@ knitr::opts_chunk$set(
   fig.align = "center",
   comment = NA
 )
-
-# avoid weird print bug in rmarkdown notebooks (maybe fixed now?)
-print.draws_summary <- function(x, ...) print(as.data.frame(x), ...)
 ```
 
 ```{r setup, results="hide", message=FALSE}
@@ -219,7 +216,7 @@ $$
 ### Prior predictive checks
 
 Before we fit the model to real data, we should check that our priors and model
-can generate plausible simulated data.
+can generate plausible simulated data. What do you think might be reasonable priors?
 
 In R we can simulate from the prior predictive distribution using a
 function like this:
@@ -316,16 +313,6 @@ develop a better model later.
 
 
 ### Writing and fitting our first Stan program
-
-```{r replace-rstan-syntax-checking}
-# OPTIONAL
-# RStudio has support for Stan syntax checking but it uses RStan not CmdStanR.
-# Because RStan is a few Stan versions behind CmdStanR we need to force 
-# RStudio's syntax checking to use CmdStanR so we can use the latest Stan syntax.
-if (requireNamespace("rstan", quietly = TRUE)) {
-  source("replace-rstan-syntax-check.R")
-}
-```
 
 Let's encode the model in a Stan program.
 
