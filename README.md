@@ -49,7 +49,7 @@ Day 2 Morning
 Day 2 Afternoon
 
 - Hierarchical models with varying intercepts
-- non-centered parameterization
+- Reparameterization based on sampler diagnostics
 - How does Stan's MCMC algorithm work?
 
 Topics we won't have time to cover but are included in the workshop materials:
