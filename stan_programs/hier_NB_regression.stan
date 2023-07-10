@@ -29,7 +29,6 @@ model {
   beta ~ normal(-0.25, 0.5);
   inv_phi ~ normal(0, 1);
 
-
   mu ~ normal(alpha + building_data * zeta, sigma_mu);
   zeta ~ normal(0, 1);
   sigma_mu ~ normal(0, 1);
