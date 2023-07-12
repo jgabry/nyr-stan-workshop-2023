@@ -226,8 +226,8 @@ function like this:
 # using normal distributions for priors on alpha and beta
 simple_poisson_dgp <- function(traps, alpha_mean, alpha_sd, beta_mean, beta_sd) {
   N <- length(traps)
-  alpha <- rnorm(1, mean = alpha_mean, sd = alpha_sd);
-  beta <- rnorm(1, mean = beta_mean, sd = beta_sd);
+  alpha <- rnorm(1, mean = alpha_mean, sd = alpha_sd)
+  beta <- rnorm(1, mean = beta_mean, sd = beta_sd)
   complaints <- rpois(N, lambda = exp(alpha + beta * traps))
   return(complaints)
 }
@@ -366,7 +366,7 @@ And compare them to draws from the prior:
 
 ```{r compare-prior-posterior}
 alpha_prior_post <- cbind(
-  alpha_prior = rnorm(4000, log(7), 1),
+  alpha_prior = rnorm(4000, 2, 1),
   alpha_posterior = as.vector(draws[, "alpha"])
 )
 mcmc_hist(
@@ -477,6 +477,19 @@ ppc_intervals(
   )
 ```
 
+Check the predicted mean number of complaints by building: 
+
+```{r fit_multi_NB-ppc_stat_grouped, fig.width=7, fig.height=6}
+ppc_stat_grouped(
+  y = standata_simple$complaints,
+  yrep = y_rep,
+  group = pest_data$building_id,
+  stat = "mean",
+  binwidth = 0.2
+)
+```
+
+We haven't included building specific information so shouldn't expect this to be great yet. 
 
 ## Expanding the model: multiple predictors
 
@@ -690,7 +703,7 @@ information into the model.
 ```{r fit_multi_NB-ppc_stat_grouped, fig.width=7, fig.height=6}
 ppc_stat_grouped(
   y = standata_simple$complaints,
-  yrep = y_rep,
+  yrep = fit_simple_pois$draws("y_rep", format = "matrix"),
   group = pest_data$building_id,
   stat = "mean",
   binwidth = 0.2
