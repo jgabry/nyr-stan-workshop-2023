@@ -60,7 +60,7 @@ transformed parameters {
    }
   */
 
-  vector[N] eta = mu[building_idx]  + kappa[building_idx] .* traps
+  vector[N] eta = mu[building_idx] + kappa[building_idx] .* traps
                   + mo[mo_idx] + log_sq_foot;
 }
 model {

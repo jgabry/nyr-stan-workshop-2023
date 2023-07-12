@@ -41,7 +41,7 @@ model {
   complaints ~ neg_binomial_2_log(eta, phi);
   inv_phi ~ normal(0, 1);
 
-  kappa_raw ~ normal(0,1);
+  kappa_raw ~ normal(0, 1);
   sigma_kappa ~ normal(0, 1);
   beta ~ normal(-0.25, 0.5);
   gamma ~ normal(0, 1);

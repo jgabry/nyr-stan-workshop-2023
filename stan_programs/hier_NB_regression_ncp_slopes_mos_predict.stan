@@ -20,7 +20,7 @@ data {
   array[N] int<lower=1,upper=M> mo_idx;
 
   int<lower=1> M_forward;
-  vector[J] log_sq_foot_pred;
+  vector[J] log_sq_foot_pred;  // included in standata_hier_long list (it's same as log_sq_foot but just 1 unique value per building)
 }
 transformed data {
   // We could pass this in as data from R but just wanted to demonstrate
@@ -80,18 +80,8 @@ model {
   sigma_mo ~ normal(0, 1);
   rho_raw ~ beta(10, 5);
 
-  { // start local block/scope just for demonstration purposes (not really needed here)
-
-   /*
-     new variables need to be declared at the top of the block unless they are
-     declared within a local scope (within curly braces). this is sometimes useful
-     in the model block to declare and define temporary variables closer to where
-     we use them.
-  */
-   vector[N] eta = mu[building_idx] + kappa[building_idx] .* traps + mo[mo_idx] + log_sq_foot;
-   complaints ~ neg_binomial_2_log(eta, phi);
-  } // end local block/scope
-
+  vector[N] eta = mu[building_idx] + kappa[building_idx] .* traps + mo[mo_idx] + log_sq_foot;
+  complaints ~ neg_binomial_2_log(eta, phi);
 }
 generated quantities {
   // we'll predict number of complaints for each building
@@ -117,5 +107,4 @@ generated quantities {
       y_pred[j, i] = sum(y_pred_by_month);
     }
   }
-
 }
