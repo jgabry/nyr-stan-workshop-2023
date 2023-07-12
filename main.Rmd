@@ -869,6 +869,7 @@ something that reparameterization will resolve. We will go through:
 We can check the effective sample sizes by printing the parameters that are of most interest.
 
 ```{r fit_hier_NB-summary-low-ESS}
+fit_hier_NB$diagnostic_summary()
 fit_hier_NB$summary(variables = c("sigma_mu", "beta", "alpha", "phi", "mu"))
 ```
 You can see that the effective sample sizes are quite low for many of the parameters
@@ -921,7 +922,7 @@ of sampling problems:
 ```{r plot-prior-funnel}
 draw_from_prior <- function() {
   sigma_mu_prior <- abs(rnorm(1, mean = 0, sd = 1))
-  mu_prior <- rnorm(1, mean = 0, sd = sigma_mu_prior)
+  mu_prior <- rnorm(1, mean = 0, sd = sigma_mu_prior) 
   c("mu" = mu_prior, "log(sigma_mu)" = log(sigma_mu_prior))
 }
 
